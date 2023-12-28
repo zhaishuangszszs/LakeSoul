@@ -28,6 +28,7 @@ use crate::serialize::arrow_java::schema_from_metadata_str;
 
 use super::file_format::LakeSoulMetaDataParquetFormat;
 
+use dashmap::DashMap;
 
 /// Reads data from LakeSoul
 ///
@@ -141,5 +142,120 @@ impl TableProvider for LakeSoulTableProvider {
         overwrite: bool,
     ) -> Result<Arc<dyn ExecutionPlan>> {
         self.listing_table.insert_into(state, input, overwrite).await
+    }
+}
+
+#[derive(Default)]
+pub struct LakeSoulSchemaProvider {
+    tables: DashMap<String, Arc<dyn TableProvider>>,
+}
+
+#[async_trait]
+impl SchemaProvider for LakeSoulSchemaProvider {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn table_names(&self) -> Vec<String> {
+        self.tables
+            .iter()
+            .map(|table| table.key().clone())
+            .collect()
+    }
+
+    async fn table(&self, name: &str) -> Option<Arc<dyn TableProvider>> {
+        self.tables.get(name).map(|table| table.value().clone())
+    }
+
+    fn register_table(
+        &self,
+        name: String,
+        table: Arc<dyn TableProvider>,
+    ) -> Result<Option<Arc<dyn TableProvider>>> {
+        if self.table_exist(name.as_str()) {
+            return Err(DataFusionError::Execution(format!(
+                "The table {name} already exists"
+            )));
+        }
+        Ok(self.tables.insert(name, table))
+    }
+
+    fn deregister_table(&self, name: &str) -> Result<Option<Arc<dyn TableProvider>>> {
+        Ok(self.tables.remove(name).map(|(_, table)| table))
+    }
+
+    fn table_exist(&self, name: &str) -> bool {
+        self.tables.contains_key(name)
+    }
+
+}
+
+#[derive(Default)]
+pub struct LakeSoulCatalogProvider {
+    schemas: DashMap<String, Arc<dyn SchemaProvider>>,
+}
+
+impl CatalogProvider for LakeSoulCatalogProvider {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn schema_names(&self) -> Vec<String> {
+        self.schemas.iter().map(|s| s.key().clone()).collect()
+    }
+
+    fn schema(&self, name: &str) -> Option<Arc<dyn SchemaProvider>> {
+        self.schemas.get(name).map(|s| s.value().clone())
+    }
+
+    fn register_schema(
+        &self,
+        name: &str,
+        schema: Arc<dyn SchemaProvider>,
+    ) -> Result<Option<Arc<dyn SchemaProvider>>> {
+        Ok(self.schemas.insert(name.into(), schema))
+    }
+
+    fn deregister_schema(
+        &self,
+        name: &str,
+        cascade: bool,
+    ) -> Result<Option<Arc<dyn SchemaProvider>>> {
+        // cascade` is not used here, but can be used to control whether
+        // to delete all tables in the schema or not.
+        if let Some(schema) = self.schema(name) {
+            let (_, removed) = self.schemas.remove(name).unwrap();
+            Ok(Some(removed))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct LakeSoulCatalogList {
+    /// Collection of catalogs containing schemas and ultimately TableProviders
+    pub catalogs: DashMap<String, Arc<dyn CatalogProvider>>,
+}
+
+impl CatalogList for LakeSoulCatalogList {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn register_catalog(
+        &self,
+        name: String,
+        catalog: Arc<dyn CatalogProvider>,
+    ) -> Option<Arc<dyn CatalogProvider>> {
+        self.catalogs.insert(name, catalog)
+    }
+
+    fn catalog_names(&self) -> Vec<String> {
+        self.catalogs.iter().map(|c| c.key().clone()).collect()
+    }
+
+    fn catalog(&self, name: &str) -> Option<Arc<dyn CatalogProvider>> {
+        self.catalogs.get(name).map(|c| c.value().clone())
     }
 }

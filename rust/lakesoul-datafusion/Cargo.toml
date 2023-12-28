@@ -29,6 +29,7 @@ log = { workspace = true }
 tokio = { workspace = true }
 rand = { workspace = true }
 bytes = { workspace = true }
+dashmap = "5.1.0"
 
 [dev-dependencies]
 ctor = "0.2"
