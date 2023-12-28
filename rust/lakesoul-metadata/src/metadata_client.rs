@@ -68,6 +68,7 @@ impl MetaDataClient {
         &self, 
         table_info: TableInfo
     ) -> Result<()> {
+        println!("** in create_table");
         self.insert_table_path_id(&table_path_id_from_table_info(&table_info)).await?;
         self.insert_table_name_id(&table_name_id_from_table_info(&table_info)).await?;
         self.insert_table_info(&table_info).await?;
@@ -75,6 +76,10 @@ impl MetaDataClient {
     }
 
     async fn execute_insert(&self, insert_type: i32, wrapper: JniWrapper) -> Result<i32> {
+        
+        let show_insert_type = DaoType::try_from(insert_type).unwrap();
+        println!("*** execute_insert: DAoType: {:?}",show_insert_type);
+
         for times in 0..self.max_retry {
             match execute_insert(self.client.lock().await.deref_mut(), self.prepared.lock().await.deref_mut(), insert_type, wrapper.clone()).await {
                 Ok(count) => return Ok(count),
@@ -88,6 +93,10 @@ impl MetaDataClient {
     }
 
     async fn execute_query(&self, query_type: i32, joined_string: String) -> Result<JniWrapper> {
+
+        let show_query_type = DaoType::try_from(query_type).unwrap();
+        println!("*** execute_query: DAoType: {:?}",show_query_type);
+
         for times in 0..self.max_retry {
             match execute_query( self.client.lock().await.deref_mut(), self.prepared.lock().await.deref_mut(), query_type, joined_string.clone()).await {
                 Ok(encoded) => return Ok(JniWrapper::decode(prost::bytes::Bytes::from(encoded))?),

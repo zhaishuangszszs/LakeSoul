@@ -36,6 +36,7 @@ impl LakeSoulTable {
     }
 
     pub async fn for_name(table_name: &str) -> Result<Self> {
+        println!("*** for_name");
         Self::for_namespace_and_name("default", table_name).await
     }
 
@@ -64,11 +65,12 @@ impl LakeSoulTable {
     pub async fn execute_upsert(&self, record_batch: RecordBatch) -> Result<()> {
         let client = Arc::new(MetaDataClient::from_env().await?);
         let builder = create_io_config_builder(client, None, false).await?;
+        println!("**--execute_upsert::create_io_config_builder finish");
         let sess_ctx = create_session_context_with_planner(
             &mut builder.clone().build(), 
             Some(LakeSoulQueryPlanner::new_ref())
         )?;
-        
+        println!("**--execute_upsert::create_session_context_with_planner finish");
         let schema = record_batch.schema();
         let logical_plan = LogicalPlanBuilder::insert_into(
             sess_ctx.read_batch(record_batch)?.into_unoptimized_plan(), 
@@ -77,12 +79,13 @@ impl LakeSoulTable {
             false)?
             .build()?;
         let dataframe = DataFrame::new(sess_ctx.state(), logical_plan);
-        
+        println!(" before collect");
         let results = dataframe
             // .explain(true, false)?
             .collect()
             .await?;
-
+        
+        println!("after collect");
         Ok(())
         // Ok(print_batches(&results)?)
 

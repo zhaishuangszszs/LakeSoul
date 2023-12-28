@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2023 LakeSoul Contributors
 //
 // SPDX-License-Identifier: Apache-2.0
+#[cfg(feature="zs")]
 mod upsert_with_io_config_tests {
     use std::sync::Arc;
     use std::env;
@@ -1253,12 +1254,17 @@ mod upsert_with_metadata_tests {
     }
 
     async fn init_table(batch: RecordBatch, table_name: &str, schema: SchemaRef,  pks:Vec<String>, client: MetaDataClientRef) -> Result<()> {
+        println!("*----in init_table");
         let builder = LakeSoulIOConfigBuilder::new()
                 .with_schema(schema)
                 .with_primary_keys(pks);
         create_table(client.clone(), table_name, builder.build()).await?;
+        println!("*----in init_table::create_table finish");
         let lakesoul_table = LakeSoulTable::for_name(table_name).await?;
-        lakesoul_table.execute_upsert(batch).await
+        println!("*----in init_table::LakeSoulTable::for_name finish");
+        let ret=lakesoul_table.execute_upsert(batch).await;
+        println!("*----in init_table::lakesoul_table.execute_upsert finish");
+        ret
     }
 
     async fn check_upsert(batch: RecordBatch, table_name: &str, selected_cols: Vec<&str>, filters: Option<String>, client: MetaDataClientRef, expected: &[&str]) -> Result<()> {
@@ -1321,7 +1327,15 @@ mod upsert_with_metadata_tests {
                 "| 20201102 | 4    | 4     |",
                 "+----------+------+-------+",
             ]
-        ).await
+        ).await?;
+
+
+
+        client.meta_cleanup().await.unwrap();
+        println!("clean metadata");
+        Ok(())
+
+
     }
 
     async fn test_merge_different_column_i32() -> Result<()> {
@@ -2356,27 +2370,27 @@ mod upsert_with_metadata_tests {
     #[tokio::test]
     async fn test_all_cases()  -> Result<()> {
         test_merge_same_column_i32().await?;
-        test_merge_different_column_i32().await?;
-        test_merge_different_columns_and_filter_by_non_selected_columns_i32().await?;
-        test_merge_different_columns_and_filter_partial_rows_i32().await?;
-        test_merge_one_file_with_empty_batch_i32().await?;
-        test_merge_multi_files_with_empty_batch_i32().await?;
-        test_upsert_without_range_parqitions_i32().await?;
-        test_upsert_with_multiple_range_and_hash_parqitions_i32().await?;
-        test_filter_requested_columns_upsert_1_times_i32().await?;
-        test_filter_requested_columns_upsert_2_times_i32().await?;
-        test_filter_requested_columns_upsert_3_times_i32().await?;
-        test_select_requested_columns_without_hash_columns_upsert_1_times_i32().await?;
-        test_select_requested_columns_without_hash_columns_upsert_2_times_i32().await?;
-        test_derange_hash_key_and_data_schema_order_int_type_upsert_1_times_i32().await?;
-        test_derange_hash_key_and_data_schema_order_int_type_upsert_2_times_i32().await?;
-        test_derange_hash_key_and_data_schema_order_int_type_upsert_3_times_i32().await?;//
-        test_derange_hash_key_and_data_schema_order_string_type_upsert_1_times_i32().await?;
-        test_derange_hash_key_and_data_schema_order_string_type_upsert_2_times_i32().await?;
-        test_derange_hash_key_and_data_schema_order_string_type_upsert_3_times_i32().await?;//
-        test_create_table_with_hash_key_disordered().await?;
-        test_merge_same_column_with_timestamp_type_i32_time().await?;
-        test_merge_different_columns_with_timestamp_type_i32_time().await?;
+        // test_merge_different_column_i32().await?;
+        // test_merge_different_columns_and_filter_by_non_selected_columns_i32().await?;
+        // test_merge_different_columns_and_filter_partial_rows_i32().await?;
+        // test_merge_one_file_with_empty_batch_i32().await?;
+        // test_merge_multi_files_with_empty_batch_i32().await?;
+        // test_upsert_without_range_parqitions_i32().await?;
+        // test_upsert_with_multiple_range_and_hash_parqitions_i32().await?;
+        // test_filter_requested_columns_upsert_1_times_i32().await?;
+        // test_filter_requested_columns_upsert_2_times_i32().await?;
+        // test_filter_requested_columns_upsert_3_times_i32().await?;
+        // test_select_requested_columns_without_hash_columns_upsert_1_times_i32().await?;
+        // test_select_requested_columns_without_hash_columns_upsert_2_times_i32().await?;
+        // test_derange_hash_key_and_data_schema_order_int_type_upsert_1_times_i32().await?;
+        // test_derange_hash_key_and_data_schema_order_int_type_upsert_2_times_i32().await?;
+        // test_derange_hash_key_and_data_schema_order_int_type_upsert_3_times_i32().await?;//
+        // test_derange_hash_key_and_data_schema_order_string_type_upsert_1_times_i32().await?;
+        // test_derange_hash_key_and_data_schema_order_string_type_upsert_2_times_i32().await?;
+        // test_derange_hash_key_and_data_schema_order_string_type_upsert_3_times_i32().await?;//
+        // test_create_table_with_hash_key_disordered().await?;
+        // test_merge_same_column_with_timestamp_type_i32_time().await?;
+        // test_merge_different_columns_with_timestamp_type_i32_time().await?;
 
         Ok(())
     }

@@ -29,7 +29,7 @@ pub(crate) async fn create_table(client: MetaDataClientRef, table_name: &str, co
         TableInfo {
             table_id: format!("table_{}", uuid::Uuid::new_v4()),
             table_name: table_name.to_string(), 
-            table_path: format!("{}default/{}", env::temp_dir().to_str().unwrap(), table_name),
+            table_path: format!("{}default/{}","/home/zhaishuang/", table_name),
             table_schema: serde_json::to_string::<ArrowJavaSchema>(&config.schema().into()).unwrap(),
             table_namespace: "default".to_string(),
             properties: "{}".to_string(),
@@ -57,18 +57,25 @@ pub(crate) async fn create_table_with_config_map(client: MetaDataClientRef, tabl
 
 pub(crate) async fn create_io_config_builder(client: MetaDataClientRef, table_name: Option<&str>, fetch_files: bool) -> Result<LakeSoulIOConfigBuilder> {
     if let Some(table_name) = table_name {
+       
         let table_info = client.get_table_info_by_table_name(table_name, "default").await?;
         let data_files = if fetch_files {
+            println!("****-----create_io_config_builder table_name构造 取文件");
             client.get_data_files_by_table_name(table_name, vec![], "default").await?
         } else {
+            println!("****-----create_io_config_builder table_name构造 非取文件");
             vec![]
         };
+        
+        println!("**** data_files: {:?}",data_files);
+
         Ok(
             create_io_config_builder_from_table_info(Arc::new(table_info))
             .with_files(data_files)
         )
         
     } else {
+        println!("****-----create_io_config_builder 默认构造");
         Ok(LakeSoulIOConfigBuilder::new())
     }
 }
