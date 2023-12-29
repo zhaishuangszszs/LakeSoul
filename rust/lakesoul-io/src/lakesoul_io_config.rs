@@ -401,7 +401,9 @@ pub fn create_session_context_with_planner(config: &mut LakeSoulIOConfig, planne
         .into_iter()
         .map(|file_name| register_object_store(&file_name, config, &runtime))
         .collect::<Result<Vec<String>>>()?;
-    config.files = normalized_filenames;
+    config.files = normalized_filenames.clone();
+
+    println!("normalized_filenames: {:?}",normalized_filenames.clone());
 
     // create session context
     let state = if let Some(planner) = planner {

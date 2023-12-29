@@ -95,6 +95,8 @@ impl FileFormat for LakeSoulMetaDataParquetFormat {
         if conf.overwrite {
             return Err(DataFusionError::NotImplemented("Overwrites are not implemented yet for Parquet".to_string()));
         }
+        
+        println!("metadata_format.rs create_writer_physical_plan called");
 
         let sink_schema = input.schema();
         let sink = Arc::new(LakeSoulParquetSink::new(conf, self.client(), self.table_info()));
@@ -194,6 +196,9 @@ impl DataSink for LakeSoulParquetSink {
         let write_id =
             rand::distributions::Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
         let file_absolute_path = vec![format!("{}/part-{}_{:0>4}.parquet", self.table_info().table_path, write_id, self.bucket_id)];
+        
+        println!("file_format write all :: file_absolute_path: {:?}",file_absolute_path);
+
         let lakesoul_io_config = create_io_config_builder_from_table_info(self.table_info())
             .with_files(file_absolute_path.clone())
             .with_schema(data.schema())

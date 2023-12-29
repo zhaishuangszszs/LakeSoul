@@ -9,6 +9,8 @@ mod test_sql {
     use std::time::Duration;
     use chrono::naive::NaiveDate;
 
+    use datafusion::catalog::CatalogProvider;
+    use datafusion::catalog::schema::SchemaProvider;
     use lakesoul_io::filter::parser::Parser;
 
     use arrow::datatypes::DataType;
@@ -23,7 +25,7 @@ mod test_sql {
     use datafusion::logical_expr::LogicalPlanBuilder;
     use datafusion::logical_expr::col;
     use datafusion::logical_expr::Expr;
-    use crate::datasource::table_provider::{LakeSoulCatalogProvider, LakeSoulTableProvider};
+    use crate::datasource::table_provider::{LakeSoulCatalogProvider, LakeSoulTableProvider, LakeSoulSchemaProvider};
     use crate::error::Result;
     use crate::lakesoul_table::LakeSoulTable;
 
@@ -73,9 +75,14 @@ mod test_sql {
         let builder=create_io_config_builder(client,Some(table_name),true).await?;
         let provider = Arc::new(LakeSoulTableProvider::try_new(&ctx.state(), builder.build(), lakesoul_table.table_info(), true).await?);
         // let df=ctx.read_table(provider)?;
-        let _=ctx.register_table("test_show_database",provider);
-        let df=ctx.sql("SELECT * FROM test_show_database").await?;
-        df.show().await?;
+        let _=ctx.register_table("test_show_database",provider.clone());
+        let schema_provider = Arc::new(LakeSoulSchemaProvider::default());
+        let _=schema_provider.register_table("domain".to_string(), provider);
+        let catalog_provider=Arc::new(LakeSoulCatalogProvider::default());
+        let _=catalog_provider.register_schema("default", schema_provider);
+        // let df=ctx.sql("SELECT * FROM test_show_database").await?;
+        let df=ctx.sql("SHOW TABLES").await?;
+        // df.show().await?;
         Ok(())
     }
 

@@ -99,6 +99,7 @@ impl LakeSoulTable {
     }
 
     pub async fn as_sink_provider(&self, session_state: &SessionState) -> Result<Arc<dyn TableProvider>> {
+        println!("as_sink_provider call");
         let config_builder = create_io_config_builder(self.client(), Some(self.table_name()), false)
             .await?
             .with_prefix(self.table_info.table_path.clone());

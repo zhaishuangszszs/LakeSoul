@@ -13,6 +13,8 @@ use crate::{serialize::arrow_java::schema_from_metadata_str, catalog::{parse_tab
 
 pub(crate) fn create_io_config_builder_from_table_info(table_info: Arc<TableInfo>) -> LakeSoulIOConfigBuilder {
     let (range_partitions, hash_partitions) = parse_table_info_partitions(table_info.partitions.clone());
+
+    println!("非默认构造LakesoulConfig table_info.table_path.clone() {:?}",table_info.table_path.clone());
     let properties = serde_json::from_str::<LakeSoulTableProperty>(&table_info.properties).unwrap();
     LakeSoulIOConfigBuilder::new()
         .with_schema(schema_from_metadata_str(&table_info.table_schema))

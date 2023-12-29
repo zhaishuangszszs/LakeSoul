@@ -70,6 +70,7 @@ impl LakeSoulListingTable {
                     .with_schema(Arc::new(builder.finish()))
             }
             true => {
+                println!("listing.rs call as_sink true");
                 let target_schema = uniform_schema(lakesoul_io_config.schema());
                 let table_partition_cols = lakesoul_io_config
                     .range_partitions
@@ -274,6 +275,8 @@ impl TableProvider for LakeSoulListingTable {
         } else {
             None
         };
+
+        println!("before metadata_format.rs create_writer_physical_plan called");
 
         self.options()
             .format

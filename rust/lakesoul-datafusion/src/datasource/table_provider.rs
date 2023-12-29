@@ -9,7 +9,10 @@ use arrow::datatypes::SchemaRef;
 
 use async_trait::async_trait;
 
+use datafusion::catalog::schema::SchemaProvider;
+use datafusion::catalog::CatalogProvider;
 use datafusion::datasource::TableProvider;
+use datafusion::catalog::CatalogList;
 use datafusion::datasource::file_format::FileFormat;
 use datafusion::datasource::file_format::parquet::ParquetFormat;
 use datafusion::error::Result;
@@ -29,6 +32,7 @@ use crate::serialize::arrow_java::schema_from_metadata_str;
 use super::file_format::LakeSoulMetaDataParquetFormat;
 
 use dashmap::DashMap;
+use datafusion::error::DataFusionError;
 
 /// Reads data from LakeSoul
 ///

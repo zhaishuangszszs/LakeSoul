@@ -44,6 +44,10 @@ impl PhysicalPlanner for LakeSoulPhysicalPlanner {
         logical_plan: &LogicalPlan,
         session_state: &SessionState,
     ) -> Result<Arc<dyn ExecutionPlan>> {
+
+        println!("ligical plan: {:?}",logical_plan);
+        println!("1");
+
         match logical_plan {
             LogicalPlan::Dml(DmlStatement {
                 table_name,
@@ -51,6 +55,7 @@ impl PhysicalPlanner for LakeSoulPhysicalPlanner {
                 input,
                 ..
             }) => {
+                println!("3");
                 let name = table_name.table();
                 // let schema = session_state.schema_for_ref(table_name)?;
                 let lakesoul_table = LakeSoulTable::for_name(name).await.unwrap();
@@ -84,8 +89,14 @@ impl PhysicalPlanner for LakeSoulPhysicalPlanner {
                         // };
 
                         let input = builder.build()?;
+                        
+                        println!("input: {:?}",input);
+
                         let input_exec = self.create_physical_plan(&input, session_state).await?;
-                        provider.insert_into(session_state, input_exec, false).await
+                        let a=provider.insert_into(session_state, input_exec, false).await;
+                        println!("provider insert_into finish");
+                        println!("3 finished");
+                        a
                     } 
                     Err(e) => 
                         return Err(DataFusionError::External(Box::new(e)))
@@ -98,7 +109,11 @@ impl PhysicalPlanner for LakeSoulPhysicalPlanner {
                     format!("Unsupported logical plan: Statement({name})")
                 ))
             }
-            _ => self.default_planner.create_physical_plan(logical_plan, session_state).await
+            _ => { println!("2");
+                let a=self.default_planner.create_physical_plan(logical_plan, session_state).await;
+                println!("2 finished");
+                a
+            }
         }
     }
 
